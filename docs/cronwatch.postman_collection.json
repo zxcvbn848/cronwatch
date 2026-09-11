@@ -1,7 +1,8 @@
 {
   "info": {
-    "name": "cronwatch (M1)",
-    "description": "M1 只有兩個端點。先跑「建立 check」，它會自動把回傳的 id 寫進 collection variable checkId，後面的 ping 直接就能送。",
+    "_postman_id": "7c1f0a4e-9c3b-4f2a-8d61-0b5e2a9f4c13",
+    "name": "cronwatch",
+    "description": "ping 端點與建立 check。先跑「建立 check」，它會把回傳的 id 寫進 collection variable checkId，後面的 ping 直接就能送。",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
