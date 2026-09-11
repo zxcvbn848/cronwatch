@@ -21,9 +21,9 @@ Dead man's switch：
 
 | 里程碑 | 內容 | 狀態 |
 |---|---|---|
-| M1 | ping 端點 + 逾期偵測 | 進行中 |
-| M2 | Email 通知 | — |
-| M3 | 註冊登入與網頁介面 | — |
+| M1 | ping 端點 + 逾期偵測 | 完成 |
+| M2 | Email 通知 | 完成 |
+| M3 | 註冊登入與網頁介面 | 下一步 |
 | M4 | 開源發佈（Docker Compose 一鍵啟動） | — |
 | M5 | 託管版 | — |
 
@@ -55,7 +55,29 @@ curl -X POST 'localhost:8080/checks?name=nightly&period=60&grace=10'
 curl -fsS localhost:8080/ping/<id>
 ```
 
-超過 `period + grace` 沒收到心跳，主控台會印出逾期訊息。M1 還不會寄信。
+超過 `period + grace` 沒收到心跳就發通知，心跳回來再發一次恢復通知。
+只在狀態轉換時發，掛著的 cron 不會每分鐘寄一封。
+
+## 通知設定
+
+沒設定 SMTP 的話通知只印在主控台，本機開發不用被迫架信箱。
+
+| 變數 | 預設 | 說明 |
+|---|---|---|
+| `SMTP_HOST` | — | 沒設就不寄信 |
+| `SMTP_PORT` | `1025` | |
+| `SMTP_USER` / `SMTP_PASS` | — | 留空則不做 SMTP 認證 |
+| `SMTP_FROM` | `cronwatch@localhost` | |
+| `NOTIFY_EMAIL` | — | 收件人。沒設就不寄信 |
+
+`docker compose up` 會一併起 [Mailpit](http://localhost:8025)，本機收信直接用它：
+
+```bash
+SMTP_HOST=localhost NOTIFY_EMAIL=you@example.com \
+DATABASE_URL=postgres://cronwatch:cronwatch@localhost:5432/cronwatch go run ./cmd/server
+```
+
+收件人目前是單一全域位址 —— M3 有了帳號之後改成 check 擁有者的 email。
 
 跑測試（需要 Postgres）：
 

@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"cronwatch/internal/check"
+	"cronwatch/internal/notify"
 )
 
 const sweepInterval = 10 * time.Second
@@ -39,21 +41,34 @@ func main() {
 		log.Fatalf("建表失敗: %v", err)
 	}
 
-	go sweepLoop(ctx, store)
+	mailer := notify.FromEnv()
+	if mailer == nil {
+		log.Print("未設定 SMTP_HOST / NOTIFY_EMAIL，通知只會印在主控台")
+	}
+
+	go sweepLoop(ctx, store, mailer)
 
 	r := gin.Default()
 
 	// PLAN.md 決定 #2：最便宜的端點。一句 UPDATE，回 200 空 body。
 	r.Any("/ping/:id", func(c *gin.Context) {
-		found, err := store.Ping(c.Request.Context(), c.Param("id"))
+		id := c.Param("id")
+		found, recovered, name, err := store.Ping(c.Request.Context(), id)
 		switch {
 		case err != nil:
-			log.Printf("ping %s 失敗: %v", c.Param("id"), err)
+			log.Printf("ping %s 失敗: %v", id, err)
 			c.Status(http.StatusInternalServerError)
+			return
 		case !found:
 			c.Status(http.StatusNotFound)
-		default:
-			c.Status(http.StatusOK)
+			return
+		}
+		c.Status(http.StatusOK)
+		if recovered {
+			// 非同步，寄信不能拖慢 ping —— 這是流量最高的端點
+			go send(mailer, "[cronwatch] 恢復："+name,
+				fmt.Sprintf("check %q (%s) 在 %s 重新回報心跳。",
+					name, id, time.Now().Format(time.RFC3339)))
 		}
 	})
 
@@ -90,7 +105,14 @@ func main() {
 	}
 }
 
-func sweepLoop(ctx context.Context, store *check.Store) {
+// send 包一層只為了統一 log 寄信失敗。失敗就算了，沒有重試佇列。
+func send(m *notify.Mailer, subject, body string) {
+	if err := m.Send(subject, body); err != nil {
+		log.Print(err)
+	}
+}
+
+func sweepLoop(ctx context.Context, store *check.Store, mailer *notify.Mailer) {
 	t := time.NewTicker(sweepInterval)
 	defer t.Stop()
 	for range t.C {
@@ -101,6 +123,11 @@ func sweepLoop(ctx context.Context, store *check.Store) {
 		}
 		for _, o := range overdue {
 			log.Printf("逾期：%s (%s) 應在 %s 前回報", o.Name, o.ID, o.NextDueAt.Format(time.RFC3339))
+			// ponytail: 每封信一個 goroutine。SMTP 沒有 dial timeout，
+			// 同步寄會讓卡住的信件凍結整個偵測迴圈。量大要改成有界的 worker。
+			go send(mailer, "[cronwatch] 逾期："+o.Name,
+				fmt.Sprintf("check %q (%s) 應在 %s 前回報心跳，但沒有收到。",
+					o.Name, o.ID, o.NextDueAt.Format(time.RFC3339)))
 		}
 	}
 }
