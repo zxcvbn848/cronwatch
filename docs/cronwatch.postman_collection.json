@@ -5,7 +5,7 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "host", "value": "http://localhost:8080" },
     { "key": "checkId", "value": "" }
   ],
   "item": [
@@ -26,8 +26,8 @@
       "request": {
         "method": "POST",
         "url": {
-          "raw": "{{baseUrl}}/checks?name=nightly&period=60&grace=10",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{host}}/checks?name=nightly&period=60&grace=10",
+          "host": ["{{host}}"],
           "path": ["checks"],
           "query": [
             { "key": "name", "value": "nightly" },
@@ -52,8 +52,8 @@
       "request": {
         "method": "POST",
         "url": {
-          "raw": "{{baseUrl}}/ping/{{checkId}}",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{host}}/ping/{{checkId}}",
+          "host": ["{{host}}"],
           "path": ["ping", "{{checkId}}"]
         },
         "description": "cron 跑完後打這個。回 200 空 body。"
@@ -64,8 +64,8 @@
       "request": {
         "method": "GET",
         "url": {
-          "raw": "{{baseUrl}}/ping/{{checkId}}",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{host}}/ping/{{checkId}}",
+          "host": ["{{host}}"],
           "path": ["ping", "{{checkId}}"]
         },
         "description": "GET 也收，給只能發 GET 的環境用。"
@@ -85,8 +85,8 @@
       "request": {
         "method": "POST",
         "url": {
-          "raw": "{{baseUrl}}/ping/00000000-0000-0000-0000-000000000000",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{host}}/ping/00000000-0000-0000-0000-000000000000",
+          "host": ["{{host}}"],
           "path": ["ping", "00000000-0000-0000-0000-000000000000"]
         }
       }
@@ -105,8 +105,8 @@
       "request": {
         "method": "POST",
         "url": {
-          "raw": "{{baseUrl}}/ping/not-a-uuid",
-          "host": ["{{baseUrl}}"],
+          "raw": "{{host}}/ping/not-a-uuid",
+          "host": ["{{host}}"],
           "path": ["ping", "not-a-uuid"]
         }
       }
