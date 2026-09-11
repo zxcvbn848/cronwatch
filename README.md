@@ -35,3 +35,30 @@ Dead man's switch：
 依 AGPL 第 13 條需一併提供你的原始碼。
 
 這是刻意的選擇：自架版永遠免費且完整，而託管服務的收入用來支撐開發。
+
+## 本機跑起來（M1）
+
+```bash
+docker compose up -d
+DATABASE_URL=postgres://cronwatch:cronwatch@localhost:5432/cronwatch go run ./cmd/server
+```
+
+建一個 check，拿到 ping URL：
+
+```bash
+curl -X POST 'localhost:8080/checks?name=nightly&period=60&grace=10'
+```
+
+在你的 cron 最後打它：
+
+```bash
+curl -fsS localhost:8080/ping/<id>
+```
+
+超過 `period + grace` 沒收到心跳，主控台會印出逾期訊息。M1 還不會寄信。
+
+跑測試（需要 Postgres）：
+
+```bash
+TEST_DATABASE_URL=postgres://cronwatch:cronwatch@localhost:5432/cronwatch go test ./...
+```
