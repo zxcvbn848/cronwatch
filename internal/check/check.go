@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -43,23 +44,34 @@ func (s *Store) Create(ctx context.Context, name string, period, grace int) (str
 }
 
 // Ping 記錄一次心跳。一句 UPDATE，不查詢、不 join —— 這是流量最高的路徑。
-// 回傳 false 表示 id 不存在（或根本不是 uuid）。
-func (s *Store) Ping(ctx context.Context, id string) (bool, error) {
-	tag, err := s.db.Exec(ctx, `
-		UPDATE checks
+//
+// 自我 join 一份 old 是為了拿到更新「之前」的 status：down → up 就是恢復，
+// 要發恢復通知。RETURNING 只給得到新值，所以得這樣取舊值。
+// 仍然是單句 SQL、兩次主鍵查找。
+//
+// found 為 false 表示 id 不存在（或根本不是 uuid）。
+func (s *Store) Ping(ctx context.Context, id string) (found, recovered bool, name string, err error) {
+	var prev string
+	err = s.db.QueryRow(ctx, `
+		UPDATE checks c
 		   SET last_ping_at = now(),
-		       next_due_at  = now() + make_interval(secs => period_secs + grace_secs),
+		       next_due_at  = now() + make_interval(secs => c.period_secs + c.grace_secs),
 		       status       = 'up'
-		 WHERE id = $1`, id)
-	if err != nil {
+		  FROM checks old
+		 WHERE c.id = old.id AND c.id = $1
+		RETURNING old.status, c.name`, id).Scan(&prev, &name)
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return false, false, "", nil
+	case err != nil:
 		// id 來自使用者輸入，不是 uuid 時 Postgres 回 22P02。這是 404 不是 500。
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "22P02" {
-			return false, nil
+			return false, false, "", nil
 		}
-		return false, err
+		return false, false, "", err
 	}
-	return tag.RowsAffected() > 0, nil
+	return true, prev == "down", name, nil
 }
 
 // Sweep 把逾期的 check 標成 down，並回傳這次剛轉換的那些。

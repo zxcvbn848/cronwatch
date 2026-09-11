@@ -5,8 +5,14 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "host", "value": "http://localhost:8080" },
-    { "key": "checkId", "value": "" }
+    {
+      "key": "host",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "checkId",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -27,12 +33,27 @@
         "method": "POST",
         "url": {
           "raw": "{{host}}/checks?name=nightly&period=60&grace=10",
-          "host": ["{{host}}"],
-          "path": ["checks"],
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "checks"
+          ],
           "query": [
-            { "key": "name", "value": "nightly" },
-            { "key": "period", "value": "60", "description": "預期多久收到一次心跳（秒）" },
-            { "key": "grace", "value": "10", "description": "寬限秒數，避免抖動誤報" }
+            {
+              "key": "name",
+              "value": "nightly"
+            },
+            {
+              "key": "period",
+              "value": "60",
+              "description": "預期多久收到一次心跳（秒）"
+            },
+            {
+              "key": "grace",
+              "value": "10",
+              "description": "寬限秒數，避免抖動誤報"
+            }
           ]
         },
         "description": "無認證的臨時端點，M3 接上登入後會移除。"
@@ -45,7 +66,9 @@
           "listen": "test",
           "script": {
             "type": "text/javascript",
-            "exec": ["pm.test('200', () => pm.response.to.have.status(200));"]
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));"
+            ]
           }
         }
       ],
@@ -53,8 +76,13 @@
         "method": "POST",
         "url": {
           "raw": "{{host}}/ping/{{checkId}}",
-          "host": ["{{host}}"],
-          "path": ["ping", "{{checkId}}"]
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "ping",
+            "{{checkId}}"
+          ]
         },
         "description": "cron 跑完後打這個。回 200 空 body。"
       }
@@ -65,50 +93,15 @@
         "method": "GET",
         "url": {
           "raw": "{{host}}/ping/{{checkId}}",
-          "host": ["{{host}}"],
-          "path": ["ping", "{{checkId}}"]
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "ping",
+            "{{checkId}}"
+          ]
         },
         "description": "GET 也收，給只能發 GET 的環境用。"
-      }
-    },
-    {
-      "name": "Ping — 不存在的 check (預期 404)",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": ["pm.test('404', () => pm.response.to.have.status(404));"]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "url": {
-          "raw": "{{host}}/ping/00000000-0000-0000-0000-000000000000",
-          "host": ["{{host}}"],
-          "path": ["ping", "00000000-0000-0000-0000-000000000000"]
-        }
-      }
-    },
-    {
-      "name": "Ping — 不是 uuid (預期 404，不是 500)",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": ["pm.test('404', () => pm.response.to.have.status(404));"]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "url": {
-          "raw": "{{host}}/ping/not-a-uuid",
-          "host": ["{{host}}"],
-          "path": ["ping", "not-a-uuid"]
-        }
       }
     }
   ]

@@ -10,5 +10,12 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  # 本機收信用，不是正式環境的一部分。UI 在 http://localhost:8025
+  mail:
+    image: axllent/mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   pgdata:
