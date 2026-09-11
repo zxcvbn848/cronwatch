@@ -1,0 +1,23 @@
+# 執行檔
+/cronwatch
+/bin/
+*.exe
+
+# 環境設定
+.env
+.env.local
+
+# 測試與覆蓋率
+*.out
+coverage.html
+/coverage-html/
+
+# 編輯器
+.vscode/
+.idea/
+.DS_Store
+
+# 本機資料
+*.db
+*.sqlite
+/data/
