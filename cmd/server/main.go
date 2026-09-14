@@ -53,7 +53,8 @@ func main() {
 	// PLAN.md 決定 #2：最便宜的端點。一句 UPDATE，回 200 空 body。
 	r.Any("/ping/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		found, recovered, name, err := store.Ping(c.Request.Context(), id)
+		found, recovered, name, err := store.Ping(c.Request.Context(), id,
+			c.ClientIP(), c.Request.UserAgent())
 		switch {
 		case err != nil:
 			log.Printf("ping %s 失敗: %v", id, err)
@@ -90,7 +91,8 @@ func main() {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "grace 需要是非負整數秒數"})
 			return
 		}
-		id, err := store.Create(c.Request.Context(), name, period, grace)
+		// userID 空字串 = 不屬於任何人。步驟 2 接上認證後這個端點會被移除。
+		id, err := store.Create(c.Request.Context(), "", name, period, grace)
 		if err != nil {
 			log.Printf("建立 check 失敗: %v", err)
 			c.Status(http.StatusInternalServerError)
