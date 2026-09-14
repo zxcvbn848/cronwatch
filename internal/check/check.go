@@ -51,10 +51,21 @@ type Heartbeat struct {
 }
 
 // Overdue 是一個已被標記為 down 的逾期 check。
+// Email 是擁有者，空字串表示孤兒 check（沒有人需要被通知）。
 type Overdue struct {
 	ID        string
 	Name      string
 	NextDueAt time.Time
+	Email     string
+}
+
+// PingResult 是一次心跳的結果。
+// 欄位比回傳值好讀 —— 四個 bool/string 排在一起遲早會傳錯順序。
+type PingResult struct {
+	Found     bool
+	Recovered bool
+	Name      string
+	Email     string // 擁有者，空字串表示孤兒 check
 }
 
 const cols = `id, name, period_secs, grace_secs, status, last_ping_at, next_due_at, created_at`
@@ -199,9 +210,11 @@ func (s *Store) RecentPings(ctx context.Context, checkID, userID string, limit i
 // 暫停的語意是「我知道它關著，別吵我」，心跳回來就表示它又開著了。
 //
 // found 為 false 表示 id 不存在（或根本不是 uuid）。
-func (s *Store) Ping(ctx context.Context, id, remoteAddr, userAgent string) (found, recovered bool, name string, err error) {
+func (s *Store) Ping(ctx context.Context, id, remoteAddr, userAgent string) (PingResult, error) {
+	var r PingResult
 	var prev string
-	err = s.db.QueryRow(ctx, `
+	var email *string // 孤兒 check 沒有擁有者
+	err := s.db.QueryRow(ctx, `
 		WITH upd AS (
 		  UPDATE checks c
 		     SET last_ping_at = now(),
@@ -209,21 +222,28 @@ func (s *Store) Ping(ctx context.Context, id, remoteAddr, userAgent string) (fou
 		         status       = 'up'
 		    FROM checks old
 		   WHERE c.id = old.id AND c.id = $1
-		  RETURNING c.id, c.name, old.status AS prev
+		  RETURNING c.id, c.name, c.user_id, old.status AS prev
 		), ins AS (
 		  INSERT INTO pings (check_id, remote_addr, user_agent)
 		  SELECT id, $2, $3 FROM upd
 		)
-		SELECT name, prev FROM upd`, id, remoteAddr, userAgent).Scan(&name, &prev)
+		SELECT upd.name, upd.prev, u.email
+		  FROM upd LEFT JOIN users u ON u.id = upd.user_id`,
+		id, remoteAddr, userAgent).Scan(&r.Name, &prev, &email)
 	switch {
 	case errors.Is(err, pgx.ErrNoRows):
-		return false, false, "", nil
+		return PingResult{}, nil
 	case err != nil && invalidUUID(err):
-		return false, false, "", nil
+		return PingResult{}, nil
 	case err != nil:
-		return false, false, "", err
+		return PingResult{}, err
 	}
-	return true, prev == "down", name, nil
+	r.Found = true
+	r.Recovered = prev == "down"
+	if email != nil {
+		r.Email = *email
+	}
+	return r, nil
 }
 
 // Sweep 把逾期的 check 標成 down，並回傳這次剛轉換的那些。
@@ -234,7 +254,8 @@ func (s *Store) Sweep(ctx context.Context) ([]Overdue, error) {
 	rows, err := s.db.Query(ctx, `
 		UPDATE checks SET status = 'down'
 		 WHERE status = 'up' AND next_due_at <= now()
-		 RETURNING id, name, next_due_at`)
+		 RETURNING id, name, next_due_at,
+		           (SELECT email FROM users WHERE users.id = checks.user_id)`)
 	if err != nil {
 		return nil, err
 	}
@@ -243,10 +264,25 @@ func (s *Store) Sweep(ctx context.Context) ([]Overdue, error) {
 	var out []Overdue
 	for rows.Next() {
 		var o Overdue
-		if err := rows.Scan(&o.ID, &o.Name, &o.NextDueAt); err != nil {
+		var email *string
+		if err := rows.Scan(&o.ID, &o.Name, &o.NextDueAt, &email); err != nil {
 			return nil, err
+		}
+		if email != nil {
+			o.Email = *email
 		}
 		out = append(out, o)
 	}
 	return out, rows.Err()
+}
+
+// TrimPings 砍掉太舊的心跳紀錄，回傳刪掉幾筆。
+//
+// ponytail: 用時間而不是「每個 check 最近 N 筆」—— 後者要 window function，
+// 前者是一句走索引的 DELETE。真的需要按筆數再說。
+func (s *Store) TrimPings(ctx context.Context, olderThan time.Duration) (int64, error) {
+	tag, err := s.db.Exec(ctx,
+		`DELETE FROM pings WHERE received_at < now() - make_interval(secs => $1)`,
+		int(olderThan.Seconds()))
+	return tag.RowsAffected(), err
 }

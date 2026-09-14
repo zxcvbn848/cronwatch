@@ -58,15 +58,18 @@ func TestPingAndSweep(t *testing.T) {
 	}
 
 	// ping → up，且下次期限在未來。第一次 ping 是 new → up，不算恢復
-	found, recovered, name, err := s.Ping(ctx, id, "10.0.0.1", "curl/8")
-	if err != nil || !found {
-		t.Fatalf("Ping = %v, %v；預期 true, nil", found, err)
+	r, err := s.Ping(ctx, id, "10.0.0.1", "curl/8")
+	if err != nil || !r.Found {
+		t.Fatalf("Ping = %+v, %v；預期 Found=true, nil", r, err)
 	}
-	if recovered {
+	if r.Recovered {
 		t.Error("new → up 不該算恢復，會多寄一封信")
 	}
-	if name != "nightly" {
-		t.Errorf("name = %q，預期 nightly", name)
+	if r.Name != "nightly" {
+		t.Errorf("name = %q，預期 nightly", r.Name)
+	}
+	if r.Email == "" {
+		t.Error("Ping 沒帶出擁有者 email，恢復通知會寄不出去")
 	}
 
 	c, ok, err := s.GetForUser(ctx, id, user)
@@ -120,22 +123,22 @@ func TestPingAndSweep(t *testing.T) {
 	}
 
 	// down → up 是恢復，要發恢復通知
-	if _, recovered, _, err = s.Ping(ctx, id, "", ""); err != nil {
+	if r, err := s.Ping(ctx, id, "", ""); err != nil {
 		t.Fatal(err)
-	} else if !recovered {
+	} else if !r.Recovered {
 		t.Error("down → up 沒被認定為恢復，恢復通知不會發出")
 	}
 
 	// up → up 不是恢復，不然每次 ping 都寄一封
-	if _, recovered, _, err = s.Ping(ctx, id, "", ""); err != nil {
+	if r, err := s.Ping(ctx, id, "", ""); err != nil {
 		t.Fatal(err)
-	} else if recovered {
+	} else if r.Recovered {
 		t.Error("up → up 被誤判成恢復，每次心跳都會寄信")
 	}
 
 	// 不是 uuid 的 id 是 404，不是錯誤
-	if found, _, _, err := s.Ping(ctx, "not-a-uuid", "", ""); err != nil || found {
-		t.Errorf("Ping(\"not-a-uuid\") = %v, %v；預期 false, nil", found, err)
+	if r, err := s.Ping(ctx, "not-a-uuid", "", ""); err != nil || r.Found {
+		t.Errorf("Ping(\"not-a-uuid\") = %+v, %v；預期 Found=false, nil", r, err)
 	}
 }
 
@@ -149,7 +152,7 @@ func TestUserScoping(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, _, err := s.Ping(ctx, id, "", ""); err != nil {
+	if _, err := s.Ping(ctx, id, "", ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -197,7 +200,7 @@ func TestEditRecomputesDue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, _, err := s.Ping(ctx, id, "", ""); err != nil {
+	if _, err := s.Ping(ctx, id, "", ""); err != nil {
 		t.Fatal(err)
 	}
 	before, _, _ := s.GetForUser(ctx, id, user)

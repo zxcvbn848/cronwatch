@@ -130,21 +130,20 @@ func (h *Handler) logout(c *gin.Context) {
 // ping 是流量最高的端點：一次 DB 來回，回 200 空 body。
 func (h *Handler) ping(c *gin.Context) {
 	id := c.Param("id")
-	found, recovered, name, err := h.checks.Ping(c.Request.Context(), id,
-		c.ClientIP(), c.Request.UserAgent())
+	r, err := h.checks.Ping(c.Request.Context(), id, c.ClientIP(), c.Request.UserAgent())
 	switch {
 	case err != nil:
 		log.Printf("ping %s 失敗: %v", id, err)
 		c.Status(http.StatusInternalServerError)
 		return
-	case !found:
+	case !r.Found:
 		c.Status(http.StatusNotFound)
 		return
 	}
 	c.Status(http.StatusOK)
-	if recovered {
-		h.mailer.SendAsync("[cronwatch] 恢復："+name,
+	if r.Recovered {
+		h.mailer.SendAsync(r.Email, "[cronwatch] 恢復："+r.Name,
 			fmt.Sprintf("check %q (%s) 在 %s 重新回報心跳。",
-				name, id, time.Now().Format(time.RFC3339)))
+				r.Name, id, time.Now().Format(time.RFC3339)))
 	}
 }

@@ -17,7 +17,11 @@ import (
 	"cronwatch/internal/web"
 )
 
-const sweepInterval = 10 * time.Second
+const (
+	sweepInterval = 10 * time.Second
+	trimInterval  = time.Hour
+	pingRetention = 30 * 24 * time.Hour
+)
 
 func main() {
 	dsn := os.Getenv("DATABASE_URL")
@@ -43,10 +47,11 @@ func main() {
 
 	mailer := notify.FromEnv()
 	if mailer == nil {
-		log.Print("未設定 SMTP_HOST / NOTIFY_EMAIL，通知只會印在主控台")
+		log.Print("未設定 SMTP_HOST，通知只會印在主控台")
 	}
 
 	go sweepLoop(ctx, checks, mailer)
+	go trimLoop(ctx, checks)
 
 	r := gin.Default()
 	web.New(checks, user.New(db), mailer).Routes(r)
@@ -68,9 +73,26 @@ func sweepLoop(ctx context.Context, checks *check.Store, mailer *notify.Mailer) 
 		}
 		for _, o := range overdue {
 			log.Printf("逾期：%s (%s) 應在 %s 前回報", o.Name, o.ID, o.NextDueAt.Format(time.RFC3339))
-			mailer.SendAsync("[cronwatch] 逾期："+o.Name,
+			mailer.SendAsync(o.Email, "[cronwatch] 逾期："+o.Name,
 				fmt.Sprintf("check %q (%s) 應在 %s 前回報心跳，但沒有收到。",
 					o.Name, o.ID, o.NextDueAt.Format(time.RFC3339)))
+		}
+	}
+}
+
+// trimLoop 定期裁切心跳歷史。PLAN.md 的「已知上限」記著 pings 會無限成長，
+// 這是 MVP 的答案：一句走索引的 DELETE，量大再換分區或時序資料庫。
+func trimLoop(ctx context.Context, checks *check.Store) {
+	t := time.NewTicker(trimInterval)
+	defer t.Stop()
+	for range t.C {
+		n, err := checks.TrimPings(ctx, pingRetention)
+		if err != nil {
+			log.Printf("裁切心跳歷史失敗: %v", err)
+			continue
+		}
+		if n > 0 {
+			log.Printf("裁切心跳歷史：刪掉 %d 筆", n)
 		}
 	}
 }
