@@ -1,0 +1,11 @@
+{{template "head" .}}
+<h1>註冊</h1>
+{{if .Err}}<p class="err">{{.Err}}</p>{{end}}
+<form method="post" action="/register">
+  <label>Email<input type="email" name="email" value="{{.Email0}}" required autofocus></label>
+  <label>密碼<input type="password" name="password" required minlength="8"></label>
+  <p class="muted">至少 8 個字元。</p>
+  <button class="primary">建立帳號</button>
+</form>
+<p>已經有帳號了？<a href="/login">登入</a></p>
+{{template "foot" .}}

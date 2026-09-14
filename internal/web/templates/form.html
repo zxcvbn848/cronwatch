@@ -1,0 +1,14 @@
+{{template "head" .}}
+<h1>新增 check</h1>
+{{if .Err}}<p class="err">{{.Err}}</p>{{end}}
+<form method="post" action="/checks">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <label>名稱<input type="text" name="name" value="{{.Name0}}" required autofocus></label>
+  <label>預期週期（分鐘）<input type="number" name="period" value="{{.Period0}}" min="1" required></label>
+  <p class="muted">多久應該收到一次心跳。每日的工作填 1440。</p>
+  <label>寬限（分鐘）<input type="number" name="grace" value="{{.Grace0}}" min="0" required></label>
+  <p class="muted">超過週期後再等多久才判定為掛掉，避免抖動誤報。</p>
+  <button class="primary">建立</button>
+  <a href="/"><button type="button">取消</button></a>
+</form>
+{{template "foot" .}}
