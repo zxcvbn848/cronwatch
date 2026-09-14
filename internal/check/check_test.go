@@ -170,8 +170,7 @@ func TestUserScoping(t *testing.T) {
 		fn   func() (bool, error)
 	}{
 		{"UpdateForUser", func() (bool, error) { return s.UpdateForUser(ctx, id, bob, "被改了", 1, 1) }},
-		{"PauseForUser", func() (bool, error) { return s.PauseForUser(ctx, id, bob) }},
-		{"ResumeForUser", func() (bool, error) { return s.ResumeForUser(ctx, id, bob) }},
+		{"TogglePauseForUser", func() (bool, error) { return s.TogglePauseForUser(ctx, id, bob) }},
 		{"DeleteForUser", func() (bool, error) { return s.DeleteForUser(ctx, id, bob) }},
 	} {
 		if ok, err := tc.fn(); err != nil || ok {
