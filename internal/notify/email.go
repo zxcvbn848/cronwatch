@@ -41,6 +41,19 @@ func FromEnv() *Mailer {
 	return m
 }
 
+// SendAsync 非同步寄信，失敗自己 log。
+//
+// ponytail: 每封信一個 goroutine。net/smtp 沒有 dial timeout，同步寄的話
+// 一封卡住的信會凍結偵測迴圈（= 漏掉後續所有逾期），在 ping 路徑上則會
+// 拖慢最熱的端點。量大要改成有界的 worker。
+func (m *Mailer) SendAsync(subject, body string) {
+	go func() {
+		if err := m.Send(subject, body); err != nil {
+			log.Print(err)
+		}
+	}()
+}
+
 // Send 寄一封純文字信。nil receiver 是合法的：印 log 就好。
 //
 // ponytail: 寄失敗只回 error 由呼叫端 log，沒有重試佇列。

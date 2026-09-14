@@ -1,0 +1,49 @@
+{{define "head"}}<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cronwatch</title>
+<style>
+  :root { color-scheme: light dark; --fg:#111; --bg:#fff; --muted:#666; --line:#ddd; --err:#b00020; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fg:#e8e8e8; --bg:#161616; --muted:#999; --line:#333; --err:#ff6b6b; }
+  }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:16px/1.6 system-ui, -apple-system, "Noto Sans TC", sans-serif; }
+  main { max-width:52rem; margin:0 auto; padding:1.5rem 1rem 4rem; }
+  header { border-bottom:1px solid var(--line); }
+  header div { max-width:52rem; margin:0 auto; padding:.75rem 1rem;
+               display:flex; align-items:center; gap:1rem; }
+  header a { color:inherit; text-decoration:none; font-weight:600; }
+  header form { margin-left:auto; }
+  label { display:block; margin:1rem 0 .25rem; }
+  input[type=text],input[type=email],input[type=password],input[type=number] {
+    width:100%; box-sizing:border-box; padding:.5rem; font:inherit;
+    border:1px solid var(--line); border-radius:4px; background:var(--bg); color:var(--fg); }
+  button { font:inherit; padding:.5rem 1rem; border:1px solid var(--line);
+           border-radius:4px; background:var(--bg); color:var(--fg); cursor:pointer; }
+  button.primary { background:var(--fg); color:var(--bg); border-color:var(--fg); }
+  .err { color:var(--err); margin:1rem 0; }
+  .muted { color:var(--muted); }
+</style>
+</head>
+<body>
+<header><div>
+  <a href="/">cronwatch</a>
+  {{if .Email}}
+    <span class="muted">{{.Email}}</span>
+    <form method="post" action="/logout">
+      <input type="hidden" name="csrf" value="{{.CSRF}}">
+      <button>登出</button>
+    </form>
+  {{end}}
+</div></header>
+<main>
+{{end}}
+
+{{define "foot"}}
+</main>
+</body>
+</html>
+{{end}}
