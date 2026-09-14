@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "7c1f0a4e-9c3b-4f2a-8d61-0b5e2a9f4c13",
     "name": "cronwatch",
-    "description": "ping 端點與建立 check。先跑「建立 check」，它會把回傳的 id 寫進 collection variable checkId，後面的 ping 直接就能送。",
+    "description": "ping 是 cronwatch 唯一的對外 API，不需要認證。check 的建立與管理走網頁介面（/register 註冊後在列表頁操作），把詳情頁的 ping URL 裡那段 uuid 填進 checkId 變數。",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -16,50 +16,6 @@
     }
   ],
   "item": [
-    {
-      "name": "建立 check",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('201', () => pm.response.to.have.status(201));",
-              "pm.collectionVariables.set('checkId', pm.response.json().id);"
-            ]
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "url": {
-          "raw": "{{host}}/checks?name=nightly&period=60&grace=10",
-          "host": [
-            "{{host}}"
-          ],
-          "path": [
-            "checks"
-          ],
-          "query": [
-            {
-              "key": "name",
-              "value": "nightly"
-            },
-            {
-              "key": "period",
-              "value": "60",
-              "description": "預期多久收到一次心跳（秒）"
-            },
-            {
-              "key": "grace",
-              "value": "10",
-              "description": "寬限秒數，避免抖動誤報"
-            }
-          ]
-        },
-        "description": "無認證的臨時端點，M3 接上登入後會移除。"
-      }
-    },
     {
       "name": "Ping (POST)",
       "event": [
