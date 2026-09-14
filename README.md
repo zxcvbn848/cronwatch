@@ -80,6 +80,10 @@ mock 掉 DB 的測試等於什麼都沒測。
 
 `docs/` 底下有可直接匯入 Postman 的 collection 與環境檔（只含 ping —— 那是唯一的對外 API）。
 
+匯入後 `{{checkId}}` 會是紅色，表示還沒有值。check 的建立走網頁介面，collection 沒有端點
+可以自動填它 —— 到 check 詳情頁把 Ping URL 最後那段 uuid 複製出來，貼進 collection
+variable 的 CURRENT VALUE 即可。
+
 ## 授權
 
 [AGPL-3.0](LICENSE)
