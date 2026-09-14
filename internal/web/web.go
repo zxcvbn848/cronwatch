@@ -48,7 +48,14 @@ func (h *Handler) Routes(r *gin.Engine) {
 
 	in := r.Group("/", h.sess.RequireAuth())
 	in.POST("/logout", h.logout)
-	in.GET("/", h.home)
+	in.GET("/", h.list)
+	in.GET("/checks/new", h.newForm)
+	in.GET("/checks/rows", h.rows)
+	in.POST("/checks", h.create)
+	in.GET("/checks/:id", h.detail)
+	in.POST("/checks/:id", h.update)
+	in.POST("/checks/:id/pause", h.togglePause)
+	in.POST("/checks/:id/delete", h.destroy)
 }
 
 // page 組出每個模板都需要的共用欄位。
@@ -118,10 +125,6 @@ func (h *Handler) login(c *gin.Context) {
 func (h *Handler) logout(c *gin.Context) {
 	h.sess.Clear(c)
 	c.Redirect(http.StatusSeeOther, "/login")
-}
-
-func (h *Handler) home(c *gin.Context) {
-	c.HTML(http.StatusOK, "home.html", h.page(c, nil))
 }
 
 // ping 是流量最高的端點：一次 DB 來回，回 200 空 body。

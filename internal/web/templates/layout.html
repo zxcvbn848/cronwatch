@@ -26,7 +26,20 @@
   button.primary { background:var(--fg); color:var(--bg); border-color:var(--fg); }
   .err { color:var(--err); margin:1rem 0; }
   .muted { color:var(--muted); }
+  table { width:100%; border-collapse:collapse; margin:1rem 0; }
+  th,td { text-align:left; padding:.5rem .5rem .5rem 0; border-bottom:1px solid var(--line); }
+  th { font-size:.85rem; color:var(--muted); font-weight:600; }
+  pre { background:color-mix(in srgb, var(--fg) 8%, transparent); padding:.75rem;
+        border-radius:4px; overflow-x:auto; }
+  h2 { font-size:1.1rem; margin-top:2rem; }
+  a { color:inherit; }
+  .badge { font-size:.85rem; padding:.15rem .5rem; border-radius:999px;
+           border:1px solid currentColor; white-space:nowrap; }
+  .badge.up { color:#1a7f37; }
+  .badge.down { color:var(--err); }
+  .badge.paused, .badge.new { color:var(--muted); }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/2.0.4/htmx.min.js" defer></script>
 </head>
 <body>
 <header><div>

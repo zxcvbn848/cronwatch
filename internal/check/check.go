@@ -134,18 +134,20 @@ func (s *Store) UpdateForUser(ctx context.Context, id, userID, name string, peri
 	return tag.RowsAffected() > 0, nil
 }
 
-// PauseForUser 暫停。paused 不在 Sweep 的 WHERE status='up' 裡，所以立刻安靜。
-func (s *Store) PauseForUser(ctx context.Context, id, userID string) (bool, error) {
-	return s.exec(ctx, `UPDATE checks SET status = 'paused' WHERE id = $1 AND user_id = $2`, id, userID)
-}
-
-// ResumeForUser 恢復監控。期限從現在起算，不然剛恢復就立刻逾期。
-func (s *Store) ResumeForUser(ctx context.Context, id, userID string) (bool, error) {
+// TogglePauseForUser 在 paused 與 up 之間切換。
+//
+// 一句 SQL 完成讀取與切換，沒有 read-modify-write 的競態。
+// 恢復時期限從現在起算，不然剛按下恢復就立刻逾期。
+func (s *Store) TogglePauseForUser(ctx context.Context, id, userID string) (bool, error) {
 	return s.exec(ctx, `
 		UPDATE checks
-		   SET status      = 'up',
-		       next_due_at = now() + make_interval(secs => period_secs + grace_secs)
-		 WHERE id = $1 AND user_id = $2 AND status = 'paused'`, id, userID)
+		   SET status = CASE WHEN status = 'paused' THEN 'up' ELSE 'paused' END,
+		       next_due_at = CASE
+		         WHEN status = 'paused'
+		         THEN now() + make_interval(secs => period_secs + grace_secs)
+		         ELSE next_due_at
+		       END
+		 WHERE id = $1 AND user_id = $2`, id, userID)
 }
 
 // DeleteForUser 刪除。pings 靠 ON DELETE CASCADE 一起走。
