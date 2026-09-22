@@ -151,8 +151,8 @@ TEST_DATABASE_URL=postgres://cronwatch:cronwatch@localhost:5432/cronwatch go tes
 |---|---|
 | M1 ping 端點 + 逾期偵測 | 已合併（PR #1） |
 | M2 Email 通知與狀態轉換 | 已合併（PR #2） |
-| M3 註冊登入與網頁介面 | **PR #3 開著，等合併** |
-| M4 開源發佈 | 下一步 |
+| M3 註冊登入與網頁介面 | 已合併（PR #3） |
+| M4 開源發佈 | 進行中（`feat/m4-self-hosting`） |
 | M5 託管版 | — |
 
 分支：`main` ← `dev` ← feature 分支。PR 都開向 `dev`。

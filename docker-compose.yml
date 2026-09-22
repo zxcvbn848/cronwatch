@@ -1,21 +1,46 @@
 services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://cronwatch:${POSTGRES_PASSWORD:?請先複製 .env.example 為 .env 並設定 POSTGRES_PASSWORD}@db:5432/cronwatch
+      PORT: 8080
+      SESSION_SECRET: ${SESSION_SECRET:?請先複製 .env.example 為 .env 並設定 SESSION_SECRET}
+      SMTP_HOST: ${SMTP_HOST-mail}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-cronwatch@localhost}
+    ports:
+      - "${PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     image: postgres:17-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: cronwatch
-      POSTGRES_PASSWORD: cronwatch
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?請先複製 .env.example 為 .env 並設定 POSTGRES_PASSWORD}
       POSTGRES_DB: cronwatch
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cronwatch"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   # 本機收信用，不是正式環境的一部分。UI 在 http://localhost:8025
   mail:
     image: axllent/mailpit
+    restart: unless-stopped
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
 
 volumes:
   pgdata:
