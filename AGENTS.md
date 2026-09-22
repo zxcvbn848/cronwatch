@@ -187,6 +187,7 @@ TEST_DATABASE_URL=postgres://cronwatch:cronwatch@localhost:5432/cronwatch go tes
 ## 慣例
 
 - **commit 訊息寫「為什麼」，不是「改了什麼」** —— diff 已經說了改什麼
+- commit 不加入 AI 工具或模型的 `Co-Authored-By`，作者只列實際負責的自然人
 - 程式碼註解同理。`ponytail:` 開頭的註解標記刻意的簡化，並註明升級路徑
 - 回覆與文件用繁體中文，程式碼與術語用英文
 - 加依賴前先問：stdlib 能不能做？現有依賴能不能做？幾行能不能做？
