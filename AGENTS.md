@@ -12,7 +12,7 @@ Dead man's switch：cron 跑完打一個 URL，心跳在預期時間內沒來就
 
 | 層 | 選擇 | 備註 |
 |---|---|---|
-| 語言 | Go 1.25 | |
+| 語言 | Go 1.26.10 | |
 | HTTP | Gin v1.12 | |
 | DB | PostgreSQL 17 | partial index 是核心機制的前提 |
 | DB driver | pgx/v5（pgxpool） | 不用 ORM，SQL 直接寫 |
