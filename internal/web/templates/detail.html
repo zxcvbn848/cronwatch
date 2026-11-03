@@ -1,0 +1,52 @@
+{{template "head" .}}
+<div style="display:flex;align-items:center;gap:1rem">
+  <h1 style="margin-right:auto">{{.Row.Name}}</h1>
+  <span class="badge {{.Row.Status}}">{{.Row.StatusText}}</span>
+</div>
+
+<h2>Ping URL</h2>
+<p class="muted">把這行放進 crontab 的最後，工作跑完就會回報。</p>
+<pre><code>curl -fsS {{.Row.PingURL}}</code></pre>
+
+<h2>設定</h2>
+{{if .Err}}<p class="err">{{.Err}}</p>{{end}}
+<form method="post" action="/checks/{{.Row.ID}}">
+  <input type="hidden" name="csrf" value="{{.CSRF}}">
+  <label>名稱<input type="text" name="name" value="{{.Row.Name}}" required></label>
+  <label>預期週期（分鐘）<input type="number" name="period" value="{{.PeriodMin}}" min="1" required></label>
+  <label>寬限（分鐘）<input type="number" name="grace" value="{{.GraceMin}}" min="0" required></label>
+  <button class="primary">儲存</button>
+</form>
+
+<h2>操作</h2>
+<div style="display:flex;gap:.5rem">
+  <form method="post" action="/checks/{{.Row.ID}}/pause">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <button>{{if eq .Row.Status "paused"}}恢復監控{{else}}暫停{{end}}</button>
+  </form>
+  <form method="post" action="/checks/{{.Row.ID}}/delete"
+        onsubmit="return confirm('刪除「{{.Row.Name}}」？心跳歷史也會一起刪掉。')">
+    <input type="hidden" name="csrf" value="{{.CSRF}}">
+    <button>刪除</button>
+  </form>
+</div>
+
+<h2>心跳歷史</h2>
+{{if .Pings}}
+  <table>
+    <thead><tr><th>時間</th><th>來源</th><th>User-Agent</th></tr></thead>
+    <tbody>
+      {{range .Pings}}
+      <tr>
+        <td>{{.When}}</td>
+        <td class="muted">{{.RemoteAddr}}</td>
+        <td class="muted" style="word-break:break-all">{{.UserAgent}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  <p class="muted">最近 {{len .Pings}} 筆。</p>
+{{else}}
+  <p class="muted">還沒收到任何心跳。</p>
+{{end}}
+{{template "foot" .}}

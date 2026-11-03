@@ -1,0 +1,8 @@
+{{range .Rows}}
+<tr>
+  <td><a href="/checks/{{.ID}}">{{.Name}}</a></td>
+  <td><span class="badge {{.Status}}">{{.StatusText}}</span></td>
+  <td class="muted">{{.LastPing}}</td>
+  <td class="muted">{{.Due}}</td>
+</tr>
+{{end}}

@@ -1,0 +1,18 @@
+{{template "head" .}}
+<div style="display:flex;align-items:center;gap:1rem">
+  <h1 style="margin-right:auto">我的 check</h1>
+  <a href="/checks/new"><button class="primary">新增 check</button></a>
+</div>
+
+{{if .Rows}}
+  <table>
+    <thead><tr><th>名稱</th><th>狀態</th><th>最後心跳</th><th>期限</th></tr></thead>
+    <tbody id="rows" hx-get="/checks/rows" hx-trigger="every 15s" hx-swap="innerHTML">
+      {{template "rows.html" .}}
+    </tbody>
+  </table>
+  <p class="muted">每 15 秒自動更新。</p>
+{{else}}
+  <p class="muted">還沒有任何 check。<a href="/checks/new">建一個</a>，把拿到的 ping URL 放進你的 crontab 最後一行。</p>
+{{end}}
+{{template "foot" .}}
